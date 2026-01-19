@@ -16,16 +16,19 @@ from multiprocessing import Process
 from fastapi import Query
 from fastapi.responses import HTMLResponse
 
-#$ load stuff
-with open('config.json', 'r') as f:
-    stuff = json.load(f)
+import os
 
-token = stuff.get('token')
-secret = stuff.get('secret')
-id = stuff.get('id')
-redirect = stuff.get('redirect')
-api = stuff.get('api_endpoint')
-logs = stuff.get('logs')
+# Remove the 'with open(config.json)...' block entirely
+# Use os.getenv to pull from Render's Environment Variables
+token = os.getenv('TOKEN')
+secret = os.getenv('SECRET')
+id = os.getenv('ID')
+redirect = os.getenv('REDIRECT')
+api = os.getenv('API_ENDPOINT', 'https://discord.com/api/v10')
+
+# For logs, if you stored them as a comma-separated string in Render:
+logs_env = os.getenv('LOGS', "")
+logs = logs_env.split(',') if logs_env else []
 
 #$ define fastapi and discord bot
 app = fastapi.FastAPI()
@@ -39,10 +42,9 @@ async def on_ready():
     print(f"connected as: {client.user}")
 
 def run_fastapi():
-    uvicorn.run("app:app", reload=True)
-    #$if you are hosting it on a server, comment out the above line and config the below line and remove the comment of the below line!
-
-    uvicorn.run("app:app",host='8.0.8.0',port=your-port-number-here, reload=True)
+    # Render assigns a port automatically via the PORT environment variable
+    port = int(os.environ.get("PORT", 10000)) 
+    uvicorn.run("app:app", host='0.0.0.0', port=port)
 
 def keep_alive():
     Process(target=run_fastapi).start()
